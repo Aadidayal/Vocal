@@ -2,11 +2,16 @@
 
 ## Product vision
 
-Build a secure conversational task manager for students, young
-professionals and individuals. Users manage tasks through text or voice.
-Voice recognition produces an editable transcript that is submitted only
-after explicit user action; assistant responses may be spoken using
-browser speech synthesis.
+Build a secure, voice-first AI task manager for students, young
+professionals and individuals. The dashboard centers on continuous speech
+commands through a prominent microphone. Browser speech recognition sends
+finalized command transcripts to the authenticated backend; the optional
+text-command fallback uses the same command pipeline. The backend uses
+Gemini as a private intent and decision engine, validates its structured
+output, and executes supported task actions through owner-scoped services.
+The assistant speaks concise responses with browser speech synthesis.
+This is a task-assistant experience, not a chatbot: chat bubbles and chat
+history are not the primary UI. Raw audio is never stored or uploaded.
 
 ## MVP users and capabilities
 

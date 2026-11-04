@@ -1,0 +1,13 @@
+{
+  "name": "@ai-task-manager/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch index.js",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "mongoose": "^8.9.5"
+  }
+}

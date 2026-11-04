@@ -48,9 +48,30 @@ action-plan execution or reminder business behavior.
     structured logger, normalized errors and safe 404 handler.
     Acceptance: errors include request ID and hide stack/secrets in
     production.
-10. Configure CORS, cookie and CSRF foundation. Acceptance: explicit
-    allowed origins, credentialed requests and CSRF bootstrap/validation
-    contract; no user authentication implementation.
+10. Configure CORS, cookie and CSRF foundation, including the minimum
+    anonymous pre-authentication session context required by the approved
+    session-bound CSRF contract. This item is authorized to create
+    anonymous pre-auth sessions without authenticating a user, persist
+    anonymous session records server-side using the approved database
+    architecture, issue an opaque session identifier in the approved
+    secure cookie, store only its hash, bind the CSRF token to that
+    context, implement `GET /api/v1/auth/csrf`, validate CSRF tokens on
+    state-changing requests, and enforce pre-auth session expiry. It also
+    configures explicit CORS origin allowlisting and credentialed requests.
+    Session IDs, cookies, and CSRF tokens must never be logged. Acceptance:
+    only allowlisted origins receive credentialed CORS responses; bootstrap
+    creates/reuses an anonymous server-side context and returns a bound
+    token; missing/invalid CSRF tokens are rejected on state changes; only
+    the session ID and CSRF token hashes are persisted; expiry is enforced;
+    no user is
+    authenticated and no login, registration, password handling, account-
+    wide revocation, authenticated session renewal, profile/onboarding, or
+    product feature is implemented. Anonymous context uses the dedicated
+    `preAuthSessions` collection, is unassociated with users, and expires
+    absolutely after 30 minutes without idle renewal. Expired records
+    cannot bootstrap or validate CSRF tokens; a new bootstrap creates a
+    fresh record. MongoDB TTL is cleanup only; application code enforces
+    expiry.
 11. Add `/health` liveness and `/ready` dependency readiness.
     Acceptance: readiness reports safe dependency state and fails when
     required DB is unavailable.
@@ -75,10 +96,11 @@ separate owner authorization.
 
 ## Phase 1 --- Authentication, profile and onboarding
 
-Implement registration with confirmed IANA timezone, hashed server-side
-sessions, CSRF, renewal/expiry, logout/revocation, email reset and
-onboarding. Tests: CSRF, session lifecycle, reset replay, rate limits,
-timezone validation and ownership.
+Implement registration with confirmed IANA timezone, authenticated
+server-side session lifecycle, renewal/expiry, logout/revocation, email
+reset and onboarding. Reuse the CSRF foundation from Phase 0. Tests:
+authentication/session lifecycle, reset replay, rate limits, timezone
+validation and ownership.
 
 ## Phase 2 --- Task domain and core interface
 

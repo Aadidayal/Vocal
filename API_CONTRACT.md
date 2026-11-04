@@ -71,10 +71,10 @@ bootstrap exception and does not mutate domain data.
   -------------------------------------------------------------------------------------------------------------
   Method/path               Auth / CSRF       Request → response                          Rules
   ------------------------- ----------------- ------------------------------------------- ---------------------
-  GET `/auth/csrf`          No auth required  → `{csrfToken}` and session cookie as       Initializes anonymous
-                                              needed                                      pre-auth session;
-                                                                                          token is
-                                                                                          session-bound.
+  GET `/auth/csrf`          No auth required  → `{csrfToken}` and opaque pre-auth         Creates a new anonymous
+                                              session cookie                              session when none is
+                                                                                          valid; returns a token
+                                                                                          bound to that session.
 
   POST `/auth/register`     Pre-auth          `{email,password,preferredName,timezone}` → Valid IANA timezone
                             session + CSRF    `201 {user}`                                required; browser
@@ -124,6 +124,14 @@ CSRF token is held in client memory and sent as `X-CSRF-Token`; rotate
 on login, registration and session renewal. Logout revokes session. TTL
 is cleanup only. Password-reset email provider is an open production
 selection, not a pending product capability.
+
+The CSRF bootstrap uses a separate anonymous pre-auth session, not an
+authenticated session. It has a 30-minute absolute lifetime and is not
+renewed on activity. If absent or expired, `GET /auth/csrf` creates a
+fresh anonymous session and returns its session-bound CSRF token. Expired
+pre-auth sessions cannot bootstrap or validate tokens. Session IDs and
+CSRF tokens use cryptographically secure randomness; only hashes are
+stored server-side in `preAuthSessions`, with no user association.
 
 ## Tasks
 

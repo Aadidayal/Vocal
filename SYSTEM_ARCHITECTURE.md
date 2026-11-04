@@ -81,6 +81,19 @@ and clears the cookie. Email password reset uses a hashed, expiring,
 single-use token and revokes all sessions. Use Argon2id or a vetted
 equivalent. Email provider remains a production selection.
 
+The CSRF bootstrap uses a separate anonymous pre-auth session stored in
+the MongoDB `preAuthSessions` collection, without a user association.
+Generate its opaque session ID and CSRF token with cryptographically
+secure randomness and persist only their hashes. The cookie is
+HttpOnly, Secure in production, SameSite=Lax, Path=/, and expires with
+the pre-auth session. Pre-auth sessions expire absolutely after 30
+minutes and are not renewed on activity. Expired sessions cannot
+bootstrap or validate CSRF tokens; a fresh bootstrap creates a new
+anonymous session. The collection TTL index is cleanup only; application
+code must check `expiresAt` on every use. This pre-auth context does not
+authenticate a user and is distinct from authenticated session storage
+and lifecycle.
+
 Use strict CORS allowlists, security headers, payload limits, runtime
 schemas, per-user rate limits, managed secrets and redacted logs. Every
 resource lookup scopes by `userId`; model-generated IDs are hints, never

@@ -1,0 +1,27 @@
+{
+  "name": "ai-task-manager",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "client",
+    "server",
+    "worker"
+  ],
+  "scripts": {
+    "dev:client": "npm run dev --workspace=client",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:worker": "npm run dev --workspace=worker",
+    "build": "npm run build --workspace=@ai-task-manager/client",
+    "start": "npm run start --workspace=@ai-task-manager/server",
+    "test": "vitest run",
+    "test:server": "npm run test --workspace=@ai-task-manager/server"
+  },
+  "devDependencies": {
+    "supertest": "^7.3.1",
+    "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

@@ -25,6 +25,19 @@ its hash. Unique tokenHash; indexes by user/revocation and expiry. TTL
 is cleanup only; API checks expiry and revocation. Idle lifetime 30
 days, absolute cap 90 days, renewal at most hourly.
 
+## preAuthSessions
+
+Anonymous CSRF-bootstrap sessions are separate from authenticated
+`sessions` and have no user association. Fields: `_id`, `sessionIdHash`,
+`csrfTokenHash`, `createdAt`, `expiresAt`. Generate the session ID and
+CSRF token using cryptographically secure randomness; persist only their
+hashes. Sessions have a 30-minute absolute lifetime with no idle renewal.
+Create a unique index on `sessionIdHash` and a TTL index on `expiresAt`
+for cleanup. Application code must explicitly reject expired records;
+TTL deletion is asynchronous and is not an authorization/validation
+mechanism. An expired pre-auth session cannot bootstrap or validate a
+CSRF token; a fresh bootstrap creates a new record.
+
 ## passwordResetTokens
 
 Fields: `_id`, `userId`, `tokenHash`, `expiresAt`, `consumedAt`,
