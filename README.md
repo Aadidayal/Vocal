@@ -195,31 +195,20 @@ The grievance desk supports personal ticket listing, status/category/priority fi
 
 The feature reuses the authenticated HTTP-only session cookie, CSRF protection, server-side Gemini key, Zod validation and existing JavaScript stack. Browser speech recognition availability and supported languages depend on the browser. The local fallback currently recognizes a limited set of English category, location and explicit priority terms; it does not reliably infer arbitrary languages or exact dates. Missing category, location or priority triggers a clarification instead of an invented ticket. The admin view can filter by status/category/priority through the API, but a separate department taxonomy is not modeled. Live MongoDB persistence and real Gemini behavior must be verified in the target deployment; automated route tests use mocked persistence and Gemini responses.
 
-## Render deployment
+## Vercel deployment (Services)
 
-Deploy as one Render **Web Service**. Express serves the Vite production build and the API from the same origin, so the client keeps using relative `/api/v1` URLs and browser cookies remain first-party. The Vite proxy is for local development only. Express keeps `/health` and `/ready` available; the React SPA fallback does not capture API or operations paths.
+The root `vercel.json` defines a Vercel Services deployment with a Vite frontend service rooted at `client/` and an Express service rooted at `server/`. Set the Vercel project's Framework Preset to **Services**. The ordered public rewrites route `/api/*` to Express first and every other path to the React service. The frontend service rewrites deep links to its Vite `index.html` so React Router routes load directly. Vercel's service rewrites preserve the original `/api/v1/...` path.
 
-Use these Render dashboard settings:
+The Express service exports an app for Vercel's request-driven runtime. It does not depend on a continuously running process. MongoDB connects lazily for API requests and is reused within a warm function instance; `/health` stays independent of MongoDB and `/ready` reports an Atlas connection failure as not ready. Vercel-provided deployment and production hostnames are added to the exact CORS allowlist at runtime. Cookies remain same-origin, `HttpOnly`, `SameSite=Lax`, and `Secure` when `NODE_ENV=production`.
 
-| Setting | Value |
-| --- | --- |
-| Runtime | Node |
-| Root Directory | Leave blank (repository root) |
-| Build Command | `npm ci && npm run build` |
-| Start Command | `npm start` |
-| Health Check Path | `/health` |
-
-Set these environment variables in the Render service dashboard (never in source control):
+Set these in Vercel Project Settings → Environment Variables for Production and Preview as appropriate (never in source control):
 
 | Variable | Value |
 | --- | --- |
-| `NODE_ENV` | `production` (enables Secure session cookies) |
-| `PORT` | `10000` (Render's default web-service port; Render also supports configuring this value) |
-| `MONGODB_URI` | MongoDB Atlas connection string, entered as a secret |
-| `GEMINI_API_KEY` | Gemini API key, entered as a secret |
-| `CORS_ALLOWED_ORIGINS` | Exact service origin, e.g. `https://your-service-name.onrender.com`; add the exact custom domain too if one is configured |
-| `GEMINI_MODEL` | Optional; defaults to `gemini-2.5-flash`. Use only a model available under free-tier access. |
+| `MONGODB_URI` | MongoDB Atlas URI, stored as a secret; allow Vercel egress in Atlas network access settings |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated exact origins, including the chosen production Vercel/custom domain; active Vercel deployment and production hostnames are added from platform variables |
+| `NODE_ENV` | `production` for Production deployments so session cookies use `Secure` |
+| `GEMINI_API_KEY` | Optional server-only Gemini key, stored as a secret; required only for Gemini rather than the local fallback |
+| `GEMINI_MODEL` | Optional; defaults in the server code. Use free-tier access only. |
 
-The MongoDB Atlas network access rules must allow the Render service to connect. Keep the Atlas URI and Gemini key in Render's secret environment settings; do not place either in a Vite/client variable. The production cookies use `Secure`, `HttpOnly`, and `SameSite=Lax`. Keep the worker disabled until reminder processing is implemented.
-
-Render web services expect the process to bind to `0.0.0.0` and expose the configured port. Render's default web-service port is `10000`; the server reads it from `PORT`.
+Do not set `VITE_*` secrets. `PORT` is not required for the serverless Express entrypoint; its local standalone process still uses the existing `PORT` environment variable. Vercel's `VERCEL_URL` and `VERCEL_PROJECT_PRODUCTION_URL` are platform-provided and must not be manually configured. The worker is not included in this deployment because it has no required always-on grievance/task HTTP role, and reminder processing is not implemented. Vercel Services are currently documented as beta; availability must be confirmed in the Vercel account.

@@ -12,7 +12,7 @@ import { log } from "./shared/logger.js";
 
 const clientDist = resolve(dirname(fileURLToPath(import.meta.url)), "../client/dist");
 
-export function createApp({ corsAllowedOrigins, clock, getConnectionState } = {}) {
+export function createApp({ corsAllowedOrigins, clock, getConnectionState, beforeRequest } = {}) {
   const app = express();
 
   app.use(requestIdMiddleware);
@@ -29,6 +29,12 @@ export function createApp({ corsAllowedOrigins, clock, getConnectionState } = {}
     });
     next();
   });
+
+  if (beforeRequest) {
+    app.use((req, res, next) => {
+      Promise.resolve(beforeRequest(req)).then(() => next()).catch(next);
+    });
+  }
 
   app.use(createOperationsRouter({ getConnectionState }));
   app.use("/api/v1", createCsrfProtection({ clock }), apiRouter);
