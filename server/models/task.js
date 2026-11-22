@@ -17,6 +17,7 @@ const taskSchema = new mongoose.Schema(
     reminderAt: { type: Date, default: null },
     reminderSentAt: { type: Date, default: null },
     reminderAttemptedAt: { type: Date, default: null },
+    reminderAttempts: { type: Number, default: 0, min: 0, max: 5 },
     completedAt: { type: Date, default: null },
     deletedAt: { type: Date, default: null },
     version: { type: Number, default: 1, min: 1, required: true },
@@ -44,6 +45,7 @@ taskSchema.pre("save", function clearReminderWhenTaskStopsBeingEligible() {
     this.reminderAt = null;
     this.reminderSentAt = null;
     this.reminderAttemptedAt = null;
+    this.reminderAttempts = 0;
   }
 });
 

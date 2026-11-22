@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseLocalCommand } from "../services/local-command-parser.js";
+import { extractTaskFilters, parseLocalCommand } from "../services/local-command-parser.js";
 
 describe("local command fallback", () => {
   it("asks for a deadline when reminder wording has no date or time", () => {
@@ -14,6 +14,12 @@ describe("local command fallback", () => {
     expect(new Date(result.task.dueAt).toISOString()).toBe("2026-11-23T12:30:00.000Z");
   });
 
+  it("parses spoken hour and minute spacing in reminder times", () => {
+    const result = parseLocalCommand("remind me to take medicine at 11 40 pm today", [], "Asia/Kolkata", new Date("2026-11-22T16:00:00.000Z"));
+    expect(result).toMatchObject({ intent: "CREATE_TASK", task: { title: "Take medicine", duePrecision: "DATETIME", reminderRequested: true } });
+    expect(result.task.dueAt).toBe("2026-11-22T18:10:00.000Z");
+  });
+
   it.each([
     ["show me pending tasks", "PENDING", ""],
     ["show completed tasks", "COMPLETED", ""],
@@ -22,5 +28,11 @@ describe("local command fallback", () => {
   ])("extracts status and priority filters from %s", (text, status, priority) => {
     const result = parseLocalCommand(text, []);
     expect(result).toMatchObject({ intent: "LIST_TASKS", filters: { status, priority }, searchQuery: "" });
+  });
+
+  it("recognizes explicit filter wording even if Gemini omits filter fields", () => {
+    expect(extractTaskFilters("show me task with the status name like pending")).toEqual({ status: "PENDING", priority: "" });
+    expect(extractTaskFilters("show me task with most priority low priority")).toEqual({ status: "", priority: "LOW" });
+    expect(extractTaskFilters("complete the pending task")).toBeNull();
   });
 });
