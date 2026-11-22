@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractTaskFilters, parseLocalCommand } from "../services/local-command-parser.js";
+import { parseLocalCommand } from "../services/local-command-parser.js";
 
 describe("local command fallback", () => {
   it("asks for a deadline when reminder wording has no date or time", () => {
@@ -22,11 +22,5 @@ describe("local command fallback", () => {
   ])("extracts status and priority filters from %s", (text, status, priority) => {
     const result = parseLocalCommand(text, []);
     expect(result).toMatchObject({ intent: "LIST_TASKS", filters: { status, priority }, searchQuery: "" });
-  });
-
-  it("recognizes explicit filter wording even if Gemini omits filter fields", () => {
-    expect(extractTaskFilters("show me task with the status name like pending")).toEqual({ status: "PENDING", priority: "" });
-    expect(extractTaskFilters("show me task with most priority low priority")).toEqual({ status: "", priority: "LOW" });
-    expect(extractTaskFilters("complete the pending task")).toBeNull();
   });
 });

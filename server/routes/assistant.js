@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireAuthenticatedSession } from "../middleware/authenticate.js";
 import { Task, TASK_PRIORITIES } from "../models/task.js";
 import { interpretTaskCommand } from "../services/gemini-provider.js";
-import { extractTaskFilters, parseLocalCommand } from "../services/local-command-parser.js";
+import { parseLocalCommand } from "../services/local-command-parser.js";
 import { serializeTask } from "./tasks.js";
 
 export const assistantRouter = express.Router();
@@ -46,12 +46,6 @@ assistantRouter.post("/messages", async (req, res, next) => {
       if (!String(error.code || "").startsWith("AI_")) throw error;
       command = parseLocalCommand(input.text, taskContext, req.user.timezone, now);
       processedBy = "local";
-    }
-    const explicitFilters = extractTaskFilters(input.text);
-    if (explicitFilters) {
-      command.intent = "LIST_TASKS";
-      command.searchQuery = "";
-      command.filters = explicitFilters;
     }
     const outcome = await executeCommand(command, { user: req.user, taskContext, taskDocuments: documents, now });
 

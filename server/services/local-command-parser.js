@@ -1,27 +1,15 @@
 const priorities = ["URGENT", "HIGH", "MEDIUM", "LOW"];
 
-export function extractTaskFilters(text) {
-  const lower = String(text || "").toLocaleLowerCase();
-  if (!/\b(show|list|find|search|display|see|view)\b/.test(lower)) return null;
-  const statusMatch = /\b(pending|in[ -]progress|completed|complete|cancelled|canceled)\b/i.exec(lower);
-  const priorityMatch = /\b(low|medium|high|urgent)\s+(?:task\s+)?priority\b|\bpriority\s+(?:is\s+)?(low|medium|high|urgent)\b/i.exec(lower);
-  if (!statusMatch && !priorityMatch) return null;
-  const statusName = statusMatch?.[1]?.toLowerCase() || "";
-  return {
-    status: statusName ? normalizeStatus(statusName) : "",
-    priority: (priorityMatch?.[1] || priorityMatch?.[2] || "").toUpperCase(),
-  };
-}
-
 export function parseLocalCommand(text, tasks, timezone = "UTC", now = new Date()) {
   const source = String(text || "").trim();
   const lower = source.toLocaleLowerCase();
   const base = { reply: "", targetTaskId: "", searchQuery: "", filters: { status: "", priority: "" }, task: emptyTask(timezone), updates: [] };
   if (/^(show|list|what are|what's|find|search).*(task|today|to.?do)/i.test(lower)) {
     const searchQuery = /\b(find|search)\b/.test(lower) ? lower.replace(/^(find|search)\s+(my\s+)?tasks?\s*/i, "").trim() : "";
-    const filters = extractTaskFilters(source) || { status: "", priority: "" };
-    const hasFilters = Boolean(filters.status || filters.priority);
-    return { ...base, intent: searchQuery && !hasFilters ? "SEARCH_TASKS" : "LIST_TASKS", searchQuery: hasFilters ? "" : searchQuery, filters, reply: "I’ll check your tasks." };
+    const status = /\b(pending|in progress|in-progress|completed|complete|cancelled|canceled)\b/i.exec(lower)?.[1]?.toLowerCase() || "";
+    const priority = /\b(low|medium|high|urgent)\s+(?:task\s+)?priority\b|\bpriority\s+(low|medium|high|urgent)\b/i.exec(lower);
+    const priorityName = (priority?.[1] || priority?.[2] || "").toUpperCase();
+    return { ...base, intent: searchQuery && !status && !priorityName ? "SEARCH_TASKS" : "LIST_TASKS", searchQuery: status || priorityName ? "" : searchQuery, filters: { status: status ? normalizeStatus(status) : "", priority: priorityName }, reply: "I’ll check your tasks." };
   }
   const create = lower.match(/^(?:please\s+)?(?:add|create|make)\s+(?:a\s+)?(?:task\s+)?(.+)$/i)
     || lower.match(/^(?:please\s+)?remind me to\s+(.+)$/i);
