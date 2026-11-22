@@ -14,12 +14,6 @@ describe("local command fallback", () => {
     expect(new Date(result.task.dueAt).toISOString()).toBe("2026-11-23T12:30:00.000Z");
   });
 
-  it("parses spoken hour and minute spacing in reminder times", () => {
-    const result = parseLocalCommand("remind me to take medicine at 11 40 pm today", [], "Asia/Kolkata", new Date("2026-11-22T16:00:00.000Z"));
-    expect(result).toMatchObject({ intent: "CREATE_TASK", task: { title: "Take medicine", duePrecision: "DATETIME", reminderRequested: true } });
-    expect(result.task.dueAt).toBe("2026-11-22T18:10:00.000Z");
-  });
-
   it.each([
     ["show me pending tasks", "PENDING", ""],
     ["show completed tasks", "COMPLETED", ""],

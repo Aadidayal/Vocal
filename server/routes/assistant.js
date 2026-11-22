@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireAuthenticatedSession } from "../middleware/authenticate.js";
 import { Task, TASK_PRIORITIES } from "../models/task.js";
 import { interpretTaskCommand } from "../services/gemini-provider.js";
-import { extractReminderDue, extractTaskFilters, parseLocalCommand } from "../services/local-command-parser.js";
+import { extractTaskFilters, parseLocalCommand } from "../services/local-command-parser.js";
 import { serializeTask } from "./tasks.js";
 
 export const assistantRouter = express.Router();
@@ -52,20 +52,6 @@ assistantRouter.post("/messages", async (req, res, next) => {
       command.intent = "LIST_TASKS";
       command.searchQuery = "";
       command.filters = explicitFilters;
-    }
-    if (command.intent === "CREATE_TASK" && /\b(remind|reminder|notify|notification|email me)\b/i.test(input.text)) {
-      command.task.reminderRequested = true;
-      const inferredDue = extractReminderDue(input.text, req.user.timezone, now);
-      if (inferredDue) {
-        command.task.duePrecision = inferredDue.precision;
-        command.task.dueDate = inferredDue.date || "";
-        command.task.dueAt = inferredDue.at || "";
-        command.task.dueTimezone = req.user.timezone;
-      }
-      if (command.task.duePrecision === "NONE") {
-        command.intent = "CLARIFICATION";
-        command.reply = "What date and time should I email you a reminder?";
-      }
     }
     const outcome = await executeCommand(command, { user: req.user, taskContext, taskDocuments: documents, now });
 
@@ -209,11 +195,7 @@ function reminderFields(task, dueFields, now) {
   const scheduled = dueFields.duePrecision === "DATETIME"
     ? new Date(dueFields.dueAt.getTime() - lead * 60_000)
     : new Date(localWallTimeToUtc(`${dueFields.dueDate}T09:00`, task.dueTimezone).getTime() - lead * 60_000);
-  if (!scheduled) throw Object.assign(new Error("I couldn’t calculate that reminder time. Please say the date and time again."), { code: "REMINDER_TIME_INVALID", statusCode: 400 });
-  if (scheduled <= now) {
-    if (now.getTime() - scheduled.getTime() > 5 * 60_000) throw Object.assign(new Error("That reminder time has already passed. Please choose a future time."), { code: "REMINDER_TIME_PASSED", statusCode: 400 });
-    scheduled.setTime(now.getTime());
-  }
+  if (!scheduled || scheduled <= now) throw Object.assign(new Error("That reminder time has already passed. Please choose a future time."), { code: "REMINDER_TIME_PASSED", statusCode: 400 });
   return { reminderAt: scheduled, reminderSentAt: null, reminderAttemptedAt: null };
 }
 function localWallTimeToUtc(local, zone) { const target = Date.parse(`${local}:00Z`); let candidate=target; for(let i=0;i<3;i++){const parts=new Intl.DateTimeFormat("en-CA",{timeZone:zone,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date(candidate)); const v=Object.fromEntries(parts.map(x=>[x.type,x.value])); const seen=Date.parse(`${v.year}-${v.month}-${v.day}T${v.hour}:${v.minute}:00Z`); candidate+=target-seen;} return dateInZone(new Date(candidate),zone)===local.slice(0,10)?new Date(candidate):null; }

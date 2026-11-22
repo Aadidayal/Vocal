@@ -13,10 +13,6 @@ export function extractTaskFilters(text) {
   };
 }
 
-export function extractReminderDue(text, timezone, now = new Date()) {
-  return localDue(String(text || ""), timezone, now);
-}
-
 export function parseLocalCommand(text, tasks, timezone = "UTC", now = new Date()) {
   const source = String(text || "").trim();
   const lower = source.toLocaleLowerCase();
@@ -57,7 +53,7 @@ export function parseLocalCommand(text, tasks, timezone = "UTC", now = new Date(
   return { ...base, intent, targetTaskId: matches[0].id, reply: "I’ll update that task." };
 }
 
-function cleanTitle(value) { return value.replace(/\s+at\s+\d{1,2}(?::|\s+)?\d{2}\s*(?:am|pm)\b.*$/i, "").replace(/\s+at\s+\d{1,2}\s*(?:am|pm)\b.*$/i, "").replace(/\b(?:by|on|tomorrow|today|urgent|high priority|medium priority|low priority)\b.*$/i, "").trim().replace(/[.!?]+$/, ""); }
+function cleanTitle(value) { return value.replace(/\b(?:by|on|tomorrow|today|urgent|high priority|medium priority|low priority)\b.*$/i, "").trim().replace(/[.!?]+$/, ""); }
 function emptyTask(timezone) { return { title:"", description:"", priority:"MEDIUM", duePrecision:"NONE", dueDate:"", dueAt:"", dueTimezone:timezone, reminderRequested:false, reminderLeadMinutes:0 }; }
 function clarify(reply) { return { intent:"CLARIFICATION", reply, targetTaskId:"", searchQuery:"", filters:{status:"",priority:""}, task:emptyTask("UTC"), updates:[] }; }
 function normalizeStatus(value) { return value === "in progress" || value === "in-progress" ? "IN_PROGRESS" : value === "complete" ? "COMPLETED" : value === "canceled" ? "CANCELLED" : value.toUpperCase(); }
@@ -65,7 +61,7 @@ function normalizeStatus(value) { return value === "in progress" || value === "i
 function localDue(source, timezone, now) {
   const explicit = source.match(/\b(?:on|by)\s+(\d{4}-\d{2}-\d{2})\b/i);
   const relative = source.match(/\b(today|tomorrow)\b/i)?.[1]?.toLowerCase();
-  const timeMatch = source.match(/\b(?:at\s+)?(\d{1,2})(?::|\s+)?(\d{2})?\s*(am|pm)\b/i);
+  const timeMatch = source.match(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
   if (!explicit && !relative && !timeMatch) return null;
   const date = explicit?.[1] || dateInZone(new Date(now.getTime() + (relative === "tomorrow" ? 86400000 : 0)), timezone);
   const hourRaw = timeMatch ? Number(timeMatch[1]) : 9;
