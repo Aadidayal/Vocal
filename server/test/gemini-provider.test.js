@@ -5,7 +5,7 @@ afterEach(() => vi.unstubAllEnvs());
 
 function input(fetchImpl) {
   vi.stubEnv("GEMINI_API_KEY", "test-only-key");
-  vi.stubEnv("GEMINI_MODEL", "gemini-2.5-flash");
+  vi.stubEnv("GEMINI_MODEL", "gemini-3.8-flash");
   return interpretTaskCommand({ text: "Add a task", timezone: "UTC", now: new Date(), tasks: [], fetchImpl });
 }
 

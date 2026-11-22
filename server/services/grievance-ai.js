@@ -8,7 +8,7 @@ export async function interpretGrievance(text, fetchImpl = fetch) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (apiKey) {
     try {
-      const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+      const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
       const response = await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey }, signal: AbortSignal.timeout(25000), body: JSON.stringify({ systemInstruction: { parts: [{ text: "Extract only facts explicitly stated in the complaint. Never infer a location, date, category or severity. If category, location or priority is missing, leave its field empty. Map urgency only when explicitly stated. Return JSON only." }] }, contents: [{ role: "user", parts: [{ text }] }], generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { title: { type: "STRING" }, description: { type: "STRING" }, category: { type: "STRING" }, location: { type: "STRING" }, priority: { type: "STRING" }, occurredAt: { type: ["STRING", "NULL"] } }, required: ["title", "description", "category", "location", "priority", "occurredAt"] } } }) });
       if (response.ok) { const payload = await response.json(); const textOut = payload?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join(""); const data = schema.safeParse(JSON.parse(textOut)); if (data.success) return { ...data.data, processedBy: "gemini" }; }
     } catch { /* Safe local extraction below; never persist unvalidated model output. */ }

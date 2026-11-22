@@ -8,7 +8,7 @@
       "buildCommand": "cd .. && npm run build --workspace=@ai-task-manager/client",
       "outputDirectory": "dist",
       "rewrites": [
-        { "source": "/(.*)", "destination": "/" }
+        { "source": "/(.*)", "destination": "/index.html" }
       ]
     },
     "server": {
@@ -19,6 +19,8 @@
     }
   },
   "rewrites": [
+    { "source": "/health", "destination": { "service": "server" } },
+    { "source": "/ready", "destination": { "service": "server" } },
     { "source": "/api/(.*)", "destination": { "service": "server" } },
     { "source": "/(.*)", "destination": { "service": "client" } }
   ]

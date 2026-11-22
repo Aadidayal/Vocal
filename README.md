@@ -87,7 +87,7 @@ Set these server-only values in `.env`:
 | `PORT` | Port for the Express API. |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated exact browser origins allowed to make credentialed requests. The example uses Vite's default local origin, `http://localhost:5173`; configure production origins only in the deployment environment. Wildcards are rejected. |
 | `GEMINI_API_KEY` | Optional server-only Gemini credential. Required to process assistant commands; never expose it through a client-prefixed variable or client bundle. |
-| `GEMINI_MODEL` | Optional server-side model override. Defaults to `gemini-2.5-flash`. Configure only a model available under your free-tier access. |
+| `GEMINI_MODEL` | Optional server-side model override. Defaults to `gemini-3.8-flash`. Configure only a model available under your free-tier access. |
 
 The server loads `.env` and validates these variables before startup. Do not put server secrets in client-prefixed variables or client source. `.env.example` contains placeholders/local development configuration only; `.env` is ignored by Git.
 
@@ -147,7 +147,7 @@ npm run dev:client
 
 Vite prints the local URL when it starts. The client restores the server session, presents registration or login when signed out, and displays the task dashboard and prominent voice assistant when signed in. Task data comes from MongoDB through the API; the client does not use localStorage or seeded task data. The worker workspace is only a shell, so reminder processing is not available.
 
-The assistant endpoint is `POST /api/v1/assistant/messages` and requires an authenticated session plus the normal CSRF token. The browser submits a transcript or optional text command; the backend validates Gemini's structured interpretation and applies task writes using session-derived ownership and task-version checks. The configured default is `gemini-2.5-flash`; the server accepts `GEMINI_MODEL` as an optional deployment override. Provider failures, including unavailable models, authorization errors, quota errors, timeouts, and invalid responses, use the local command parser so supported commands can still execute. The project must use Gemini free-tier access only: no billing, paid-only features, paid fallback models, Google Search grounding, or separately billed tools. Live Gemini validation is pending. Check browser support and grant microphone permission to use voice; the text fallback is available when voice recognition is unavailable.
+The assistant endpoint is `POST /api/v1/assistant/messages` and requires an authenticated session plus the normal CSRF token. The browser submits a transcript or optional text command; the backend validates Gemini's structured interpretation and applies task writes using session-derived ownership and task-version checks. The configured default is `gemini-3.8-flash`; the server accepts `GEMINI_MODEL` as an optional deployment override. Provider failures, including unavailable models, authorization errors, quota errors, timeouts, and invalid responses, use the local command parser so supported commands can still execute. The project must use Gemini free-tier access only: no billing, paid-only features, paid fallback models, Google Search grounding, or separately billed tools. A single minimal live request returned HTTP 503; account-specific model access remains unverified. Check browser support and grant microphone permission to use voice; the text fallback is available when voice recognition is unavailable.
 
 ## Testing and quality checks
 
