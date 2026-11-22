@@ -78,13 +78,18 @@ async function executeCommand(command, { user, taskContext, taskDocuments, now }
       priority: command.task.priority || "MEDIUM",
       status: "PENDING",
       ...dueResult.fields,
+      ...reminderFields(command.task, dueResult.fields, now),
     });
-    return { intent: "CREATE_TASK", reply: `Added “${task.title}” to your tasks.`, taskResults: [{ operation: "CREATED", task: serializeTask(task, now) }] };
+    return { intent: "CREATE_TASK", reply: `Added “${task.title}” to your tasks.${task.reminderAt ? ` I’ll email you a reminder for ${task.reminderAt.toLocaleString("en-US", { timeZone: user.timezone, dateStyle: "medium", timeStyle: "short" })}.` : ""}`, taskResults: [{ operation: "CREATED", task: serializeTask(task, now) }] };
   }
 
   if (command.intent === "LIST_TASKS" || command.intent === "SEARCH_TASKS") {
     const needle = command.searchQuery.trim().toLocaleLowerCase();
-    const matches = taskDocuments.filter((task) => !needle || `${task.title} ${task.description || ""}`.toLocaleLowerCase().includes(needle));
+    const filters = command.filters || { status: "", priority: "" };
+    const matches = taskDocuments.filter((task) =>
+      (!filters.status || task.status === filters.status)
+      && (!filters.priority || task.priority === filters.priority)
+      && (!needle || `${task.title} ${task.description || ""}`.toLocaleLowerCase().includes(needle)));
     return {
       intent: command.intent,
       reply: matches.length === 0 ? "I couldn’t find a matching task." : matches.length === 1 ? `I found ${matches[0].title}.` : `I found ${matches.length} matching tasks.`,
@@ -140,6 +145,9 @@ async function executeCommand(command, { user, taskContext, taskDocuments, now }
           : requestedDue.precision === "DATE"
             ? { duePrecision: "DATE", dueDate: requestedDue.date, dueAt: null, dueTimezone: requestedDue.timezone }
             : { duePrecision: "DATETIME", dueDate: null, dueAt: new Date(requestedDue.at), dueTimezone: requestedDue.timezone });
+        changes.reminderAt = null;
+        changes.reminderSentAt = null;
+        changes.reminderAttemptedAt = null;
       }
     }
     if (Object.keys(changes).length === 0) return clarification("What would you like me to change on that task?");
@@ -173,6 +181,19 @@ function parseDue(task) {
   if (!due.at.endsWith("Z")) return { error: "Please specify the time in your local timezone." };
   return { fields: { duePrecision: "DATETIME", dueDate: null, dueAt: new Date(due.at), dueTimezone: due.timezone } };
 }
+
+function reminderFields(task, dueFields, now) {
+  if (!task.reminderRequested) return { reminderAt: null, reminderSentAt: null, reminderAttemptedAt: null };
+  if (!dueFields.duePrecision) throw Object.assign(new Error("A reminder needs a due date and time."), { code: "REMINDER_NEEDS_DUE", statusCode: 400 });
+  const lead = Math.max(0, Math.min(10080, Number(task.reminderLeadMinutes) || 0));
+  const scheduled = dueFields.duePrecision === "DATETIME"
+    ? new Date(dueFields.dueAt.getTime() - lead * 60_000)
+    : new Date(localWallTimeToUtc(`${dueFields.dueDate}T09:00`, task.dueTimezone).getTime() - lead * 60_000);
+  if (!scheduled || scheduled <= now) throw Object.assign(new Error("That reminder time has already passed. Please choose a future time."), { code: "REMINDER_TIME_PASSED", statusCode: 400 });
+  return { reminderAt: scheduled, reminderSentAt: null, reminderAttemptedAt: null };
+}
+function localWallTimeToUtc(local, zone) { const target = Date.parse(`${local}:00Z`); let candidate=target; for(let i=0;i<3;i++){const parts=new Intl.DateTimeFormat("en-CA",{timeZone:zone,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date(candidate)); const v=Object.fromEntries(parts.map(x=>[x.type,x.value])); const seen=Date.parse(`${v.year}-${v.month}-${v.day}T${v.hour}:${v.minute}:00Z`); candidate+=target-seen;} return dateInZone(new Date(candidate),zone)===local.slice(0,10)?new Date(candidate):null; }
+function dateInZone(date,zone) { const p=new Intl.DateTimeFormat("en-CA",{timeZone:zone,year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(date); const v=Object.fromEntries(p.map(x=>[x.type,x.value])); return `${v.year}-${v.month}-${v.day}`; }
 
 function clarification(reply) { return { intent: "CLARIFICATION", reply }; }
 function isIanaTimezone(value) { try { return Boolean(Intl.DateTimeFormat("en-US", { timeZone: value }).resolvedOptions().timeZone); } catch { return false; } }

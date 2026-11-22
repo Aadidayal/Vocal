@@ -9,6 +9,7 @@ import { createCsrfProtection } from "./middleware/csrf.js";
 import { apiRouter } from "./routes/index.js";
 import { createOperationsRouter } from "./routes/operations.js";
 import { log } from "./shared/logger.js";
+import { reminderDispatchRouter } from "./routes/reminder-dispatch.js";
 
 const clientDist = resolve(dirname(fileURLToPath(import.meta.url)), "../client/dist");
 
@@ -37,6 +38,7 @@ export function createApp({ corsAllowedOrigins, clock, getConnectionState, befor
   }
 
   app.use(createOperationsRouter({ getConnectionState }));
+  app.use("/api/internal/reminders/dispatch", reminderDispatchRouter);
   app.use("/api/v1", createCsrfProtection({ clock }), apiRouter);
 
   if (existsSync(resolve(clientDist, "index.html"))) {

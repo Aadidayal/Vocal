@@ -96,6 +96,9 @@ tasksRouter.patch("/:taskId", asyncRoute(async (req, res) => {
       throw Object.assign(new Error("Task due precision cannot be changed."), { statusCode: 400, code: "VALIDATION_ERROR" });
     }
     Object.assign(changes, dueFields(due ?? undefined));
+    changes.reminderAt = null;
+    changes.reminderSentAt = null;
+    changes.reminderAttemptedAt = null;
   }
   const task = await Task.findOneAndUpdate(
     { _id: taskId, userId: req.user._id, deletedAt: null, version },
@@ -166,7 +169,7 @@ export function serializeTask(task, now = new Date()) {
     priority: task.priority,
     status: task.status,
     ...(due ? { due } : {}),
-    activeReminder: null,
+    activeReminder: task.reminderAt && !task.reminderSentAt ? { scheduledAt: new Date(task.reminderAt).toISOString() } : null,
     completedAt: task.completedAt ? new Date(task.completedAt).toISOString() : null,
     isOverdue: Boolean(overdue),
     version: task.version,

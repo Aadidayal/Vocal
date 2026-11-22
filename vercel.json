@@ -23,5 +23,6 @@
     { "source": "/ready", "destination": { "service": "server" } },
     { "source": "/api/(.*)", "destination": { "service": "server" } },
     { "source": "/(.*)", "destination": { "service": "client" } }
-  ]
+  ],
+  "crons": [{ "path": "/api/internal/reminders/dispatch", "schedule": "* * * * *" }]
 }

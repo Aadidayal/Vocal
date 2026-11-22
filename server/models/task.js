@@ -14,6 +14,9 @@ const taskSchema = new mongoose.Schema(
     dueDate: { type: String, default: null },
     dueAt: { type: Date, default: null },
     dueTimezone: { type: String, default: null },
+    reminderAt: { type: Date, default: null },
+    reminderSentAt: { type: Date, default: null },
+    reminderAttemptedAt: { type: Date, default: null },
     completedAt: { type: Date, default: null },
     deletedAt: { type: Date, default: null },
     version: { type: Number, default: 1, min: 1, required: true },
@@ -25,6 +28,7 @@ taskSchema.index({ userId: 1, deletedAt: 1, status: 1, dueAt: 1 });
 taskSchema.index({ userId: 1, deletedAt: 1, dueDate: 1 });
 taskSchema.index({ userId: 1, deletedAt: 1, priority: 1 });
 taskSchema.index({ userId: 1, updatedAt: 1 });
+taskSchema.index({ reminderAt: 1, reminderSentAt: 1, status: 1, deletedAt: 1 });
 taskSchema.pre("validate", function validateDueShape() {
   const valid = this.duePrecision === null
     ? this.dueDate === null && this.dueAt === null && this.dueTimezone === null
@@ -34,6 +38,13 @@ taskSchema.pre("validate", function validateDueShape() {
         ? this.dueDate === null && this.dueAt instanceof Date && Boolean(this.dueTimezone)
         : false;
   if (!valid) this.invalidate("duePrecision", "Due date fields must match their precision.");
+});
+taskSchema.pre("save", function clearReminderWhenTaskStopsBeingEligible() {
+  if (this.isModified("status") && ["COMPLETED", "CANCELLED"].includes(this.status)) {
+    this.reminderAt = null;
+    this.reminderSentAt = null;
+    this.reminderAttemptedAt = null;
+  }
 });
 
 export const Task = mongoose.models.Task || mongoose.model("Task", taskSchema);

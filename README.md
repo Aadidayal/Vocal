@@ -210,5 +210,11 @@ Set these in Vercel Project Settings → Environment Variables for Production an
 | `NODE_ENV` | `production` for Production deployments so session cookies use `Secure` |
 | `GEMINI_API_KEY` | Optional server-only Gemini key, stored as a secret; required only for Gemini rather than the local fallback |
 | `GEMINI_MODEL` | Optional; defaults in the server code. Use free-tier access only. |
+| `SMTP_HOST` | SMTP server host from your email provider. |
+| `SMTP_PORT` | SMTP port; use `587` for STARTTLS or `465` for implicit TLS. |
+| `SMTP_USER` | SMTP username provided by your email host. |
+| `SMTP_PASSWORD` | SMTP password or app-specific password provided by your email host. |
+| `REMINDER_FROM_EMAIL` | Sender address authorized by your SMTP provider. |
+| `REMINDER_CRON_SECRET` | Long random bearer secret protecting the scheduled reminder dispatch endpoint. |
 
-Do not set `VITE_*` secrets. `PORT` is not required for the serverless Express entrypoint; its local standalone process still uses the existing `PORT` environment variable. Vercel's `VERCEL_URL` and `VERCEL_PROJECT_PRODUCTION_URL` are platform-provided and must not be manually configured. The worker is not included in this deployment because it has no required always-on grievance/task HTTP role, and reminder processing is not implemented. Vercel Services are currently documented as beta; availability must be confirmed in the Vercel account.
+Do not set `VITE_*` secrets. `PORT` is not required for the serverless Express entrypoint; its local standalone process still uses the existing `PORT` environment variable. Vercel's `VERCEL_URL` and `VERCEL_PROJECT_PRODUCTION_URL` are platform-provided and must not be manually configured. Reminder dispatch uses the Vercel Cron entry in `vercel.json` and Nodemailer over SMTP; configure the SMTP variables and sender above plus the cron secret in the server service's production environment. Use credentials and a sender authorized by your SMTP provider.

@@ -280,7 +280,7 @@ function TaskRow({ task, onEdit, onLifecycle, pending }) {
     <div className="min-w-0 flex-1">
       <div className="flex flex-wrap items-center gap-2"><h3 className={`text-sm font-bold text-slate-900 sm:text-[15px] ${completed ? "line-through decoration-slate-400" : ""}`}>{task.title}</h3><StatusBadge status={task.status} /></div>
       {task.description && <p className="mt-1.5 line-clamp-2 max-w-3xl text-sm leading-5 text-slate-500">{task.description}</p>}
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2"><PriorityBadge priority={task.priority} />{task.due && <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${task.isOverdue ? "text-rose-600" : "text-slate-500"}`}><CalendarDays size={13} />{formatDue(task.due)}{task.isOverdue ? " · Overdue" : ""}</span>}</div>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2"><PriorityBadge priority={task.priority} />{task.due && <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${task.isOverdue ? "text-rose-600" : "text-slate-500"}`}><CalendarDays size={13} />{formatDue(task.due)}{task.isOverdue ? " · Overdue" : ""}</span>}{task.activeReminder && <span className="text-xs font-medium text-indigo-600">Email reminder {new Date(task.activeReminder.scheduledAt).toLocaleString()}</span>}</div>
     </div>
     <button aria-label={`Edit ${task.title}`} className="absolute right-5 top-5 rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-indigo-600 focus-visible:outline-2 focus-visible:outline-indigo-600 sm:static sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100" onClick={onEdit}><SquarePen size={17} /></button>
   </article>;
