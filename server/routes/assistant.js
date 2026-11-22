@@ -6,6 +6,7 @@ import { Task, TASK_PRIORITIES } from "../models/task.js";
 import { interpretTaskCommand } from "../services/gemini-provider.js";
 import { parseLocalCommand } from "../services/local-command-parser.js";
 import { serializeTask } from "./tasks.js";
+import { log } from "../shared/logger.js";
 
 export const assistantRouter = express.Router();
 assistantRouter.use(requireAuthenticatedSession());
@@ -44,6 +45,7 @@ assistantRouter.post("/messages", async (req, res, next) => {
       command = await interpretTaskCommand({ text: input.text, timezone: req.user.timezone, now, tasks: taskContext });
     } catch (error) {
       if (!String(error.code || "").startsWith("AI_")) throw error;
+      log("warn", "gemini_provider_fallback", { code: error.code, statusCode: error.statusCode || null });
       command = parseLocalCommand(input.text, taskContext, req.user.timezone, now);
       processedBy = "local";
     }
